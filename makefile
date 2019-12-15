@@ -8,8 +8,11 @@ all: dungeon
 dungeon: $(OBJ)
 	$(CXX) -o $@ $(OBJ)
 
-obj/%.o: %.cpp
+obj/%.o: %.cpp obj
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+obj:
+	mkdir obj
 
 .PHONY: clean
 
