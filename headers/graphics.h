@@ -11,15 +11,28 @@ public:
 
     Vector2(double n_x, double n_y): x(n_x), y(n_y){}
 
-    void scale(double multiplier)
+    Vector2 scale(double multiplier)
     {
         x *= multiplier;
         y *= multiplier;
+        return Vector2(x, y);
     }
 
     double getMagnitude()
     {
         return sqrt(x * x + y * y);
+    }
+
+    double getAngle()
+    {
+        if(y >=0)
+        {
+            return atan2(y, x);
+        }
+        else
+        {
+            return  2 * M_PI + atan2(y, x);
+        }
     }
 };
 

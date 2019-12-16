@@ -12,7 +12,7 @@ obj/%.o: %.cpp obj
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 obj:
-	mkdir obj
+	mkdir $@
 
 .PHONY: clean
 
