@@ -12,29 +12,67 @@ enum Directions
     RIGHT
 };
 
-int getRand(int min, int max)
+double getRand(double min, double max)
 {
     static const double fraction = 1.0 / (static_cast<double>(RAND_MAX) + 1.0);
-    return static_cast<int>(rand() * fraction * (max - min + 1) + min);
+    return rand() * fraction * (max - min + 1) + min;
 }
 
-int getDirection(double angle)
+struct Room
 {
-    if(angle <= 45 || angle > 315)
+    int xpos;
+    int ypos;
+    int width;
+    int height;
+};
+
+template <typename T>
+struct Tree
+{
+    T data;
+    Tree<T>* leftBranch = nullptr;
+    Tree<T>* rightBranch = nullptr;
+};
+
+void genDungeon(Tree<Room> &tree, int depth, int xpos, int ypos, int width, int height)
+{
+    if(depth == 0)
     {
-        return RIGHT;
+        tree.data.xpos = xpos;
+        tree.data.ypos = ypos;
+        tree.data.width = width;
+        tree.data.height = height;
+        return;
     }
-    if(angle > 45 && angle <= 135)
+
+    tree.leftBranch = new Tree<Room>;
+    tree.rightBranch = new Tree<Room>;
+
+    int direction = getRand(0, 2);
+
+    if(direction == 0)
     {
-        return DOWN;
-    }
-    if(angle > 135 && angle <= 225)
-    {
-        return LEFT;
+        genDungeon(*tree.leftBranch, depth - 1, xpos, ypos, width, height/2);
+        genDungeon(*tree.rightBranch, depth - 1, xpos, ypos + height / 2, width, height/2);
     }
     else
     {
-        return UP;
+        genDungeon(*tree.leftBranch, depth - 1, xpos, ypos, width / 2, height);
+        genDungeon(*tree.rightBranch, depth - 1, xpos + width / 2, ypos, width / 2, height);
+    }
+}
+
+void drawDungeon(ImageBuffer &img, Tree<Room> &tree)
+{
+    if(tree.leftBranch == nullptr)
+    {
+        img.drawRect(tree.data.xpos, tree.data.ypos, tree.data.width, tree.data.height);
+        return;
+    }
+    else
+    {
+        drawDungeon(img, *tree.leftBranch);
+        drawDungeon(img, *tree.rightBranch);
     }
 }
 
@@ -46,103 +84,9 @@ int main()
     const int yres = 40;
     ImageBuffer test(xres, yres);
 
-    std::vector<Vector2> points;
-    int attempts = 0;
-    int maxAttempts = 90;
-    bool valid;
-
-    while(attempts < maxAttempts)
-    {
-        valid = true;
-
-        Vector2 newPoint(getRand(8, xres - 9), getRand(4, yres - 5));
-        for(size_t i = 0; i < points.size(); ++i)
-        {
-            if((points[i] - newPoint).getMagnitude() < 24)
-            {
-                valid = false;
-                attempts++;
-                break;
-            }
-        }
-
-        if(valid)
-        {
-            points.push_back(newPoint);
-            attempts = 0;
-        }
-    }
-
-    std::vector<std::vector<int>> limits;
-    for(size_t i = 0; i < points.size(); ++i)
-    {
-        limits.push_back(std::vector<int>());
-        limits.push_back(std::vector<int>());
-        limits.push_back(std::vector<int>());
-        limits.push_back(std::vector<int>());
-
-        limits[i].push_back(0);
-        limits[i].push_back(yres - 1);
-        limits[i].push_back(0);
-        limits[i].push_back(xres - 1);
-        std::cout << "fine\n";
-    }
-
-    for(size_t i = 0; i < points.size(); ++i)
-    {
-        for(size_t j = 0; j < points.size(); ++j)
-        {
-            if(i == j)
-            {
-                continue;
-            }
-
-            Vector2 difference = points[j] - points[i];
-            double angle = difference.getAngle() * (180.0 / M_PI);
-            int dir = getDirection(angle);
-            Vector2 midPoint = difference.scale(0.5) + points[i];
-
-            if(dir == UP)
-            {
-                if(midPoint.y > limits[i][UP])
-                {
-                    limits[i][UP] = midPoint.y;
-                }
-            }
-            else if(dir == DOWN)
-            {
-                if(midPoint.y < limits[i][DOWN])
-                {
-                    limits[i][DOWN] = midPoint.y;
-                }
-            }
-            else if(dir == LEFT)
-            {
-                if(midPoint.x > limits[i][LEFT])
-                {
-                    limits[i][LEFT] = midPoint.x;
-                }
-            }
-            else
-            {
-                if(midPoint.x < limits[i][RIGHT])
-                {
-                    limits[i][RIGHT] = midPoint.x;
-                }
-            }
-        }
-    }
-
-    for(size_t i = 0; i < points.size(); ++i)
-    {
-        int xpos = getRand(limits[i][LEFT], static_cast<int>(points[i].x));
-        int ypos = getRand(limits[i][UP], static_cast<int>(points[i].y));
-        int maxWidth = limits[i][RIGHT] - xpos;
-        int maxHeight = limits[i][DOWN] - ypos;
-        int width = getRand(0.7 * maxWidth, maxWidth);
-        int height = getRand(0.7 * maxHeight, maxHeight);
-        test.drawRect(xpos, ypos, width, height);
-    }
+    Tree<Room> dungeon;
+    genDungeon(dungeon, 3, 0, 0, xres, yres);
+    drawDungeon(test, dungeon);
 
     drawImage(test);
 
